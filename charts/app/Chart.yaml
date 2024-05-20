@@ -1,6 +1,6 @@
 apiVersion: v2
-name: app
-description: Web service template in Python for reuse.
+name: trade-off-service
+description: Trade off service component Helm chart.
 type: application
 version: ""
 appVersion: ""
