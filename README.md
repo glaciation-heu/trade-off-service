@@ -7,4 +7,4 @@ interacting with the _Metadata Service_ to get the metadata
 stored in the DKG and _InfluxDB_ to retrieve the actual data coming
 from the telemetry system.
 
-![Trade-Off Service Interaction Diagram](./docs/trade-off-service-diagram-v2.jpg)
+![Trade-Off Service Interaction Diagram](./trade-off-service-diagram-v2.jpg)
