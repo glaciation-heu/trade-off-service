@@ -98,23 +98,23 @@ make_docker_images_with_tags() {
   echo -n "${RESULT}" > "${DOCKER_IMAGES_PATH}"
 }
 
-patch_versions_in_project_files() {
-  DOCKER_IMAGE_NAME="$1"
-
-  PYPROJECT_PATH="${ROOT}/pyproject.toml"
-  CHART_PATH="${ROOT}/charts/${CHART_NAME}"
-
-  VERSION_APP=$(cat "${VERSION_APP_PATH}")
-  DOCKER_IMAGE_TAG=$(rev "${VERSION_DOCKER_PATH}" | cut -d ',' -f 1 | rev)
-  VERSION_CHART=$(cat "${VERSION_CHART_PATH}")
-
-  sed -i "s#version = \"0.0.0\"#version = \"$VERSION_APP\"#" "${PYPROJECT_PATH}"
-
-  sed -i "s#repository: \"\"#repository: \"$DOCKER_IMAGE_NAME\"#" "${CHART_PATH}/values.yaml"
-  sed -i "s#tag: \"\"#tag: \"$DOCKER_IMAGE_TAG\"#" "${CHART_PATH}/values.yaml"
-  sed -i "s#version: \"\"#version: \"$VERSION_CHART\"#" "${CHART_PATH}/Chart.yaml"
-  sed -i "s#appVersion: \"\"#appVersion: \"$VERSION_CHART\"#" "${CHART_PATH}/Chart.yaml"
-}
+#patch_versions_in_project_files() {
+#  DOCKER_IMAGE_NAME="$1"
+#
+#  PYPROJECT_PATH="${ROOT}/pyproject.toml"
+#  CHART_PATH="${ROOT}/charts/${CHART_NAME}"
+#
+#  VERSION_APP=$(cat "${VERSION_APP_PATH}")
+#  DOCKER_IMAGE_TAG=$(rev "${VERSION_DOCKER_PATH}" | cut -d ',' -f 1 | rev)
+#  VERSION_CHART=$(cat "${VERSION_CHART_PATH}")
+#
+#  sed -i "s#version = \"0.0.0\"#version = \"$VERSION_APP\"#" "${PYPROJECT_PATH}"
+#
+#  sed -i "s#repository: \"\"#repository: \"$DOCKER_IMAGE_NAME\"#" "${CHART_PATH}/values.yaml"
+#  sed -i "s#tag: \"\"#tag: \"$DOCKER_IMAGE_TAG\"#" "${CHART_PATH}/values.yaml"
+#  sed -i "s#version: \"\"#version: \"$VERSION_CHART\"#" "${CHART_PATH}/Chart.yaml"
+#  sed -i "s#appVersion: \"\"#appVersion: \"$VERSION_CHART\"#" "${CHART_PATH}/Chart.yaml"
+#}
 
 main() {
   GIT_SHA="$1"
@@ -122,7 +122,7 @@ main() {
 
   make_version "$GIT_SHA"
   make_docker_images_with_tags "$DOCKER_IMAGE_NAME"
-  patch_versions_in_project_files "$DOCKER_IMAGE_NAME"
+#  patch_versions_in_project_files "$DOCKER_IMAGE_NAME"
 }
 
 main "$@"
