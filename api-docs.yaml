@@ -1,0 +1,207 @@
+openapi: 3.0.1
+servers:
+- url: http://localhost:8080/api/v1
+  description: OpenApi specs url
+paths:
+  /stub/workloads:
+    get:
+      tags:
+      - stub-controller
+      description: Get data and metadata about all workloads
+      operationId: getWorkloads
+      parameters:
+      - name: startTime
+        in: query
+        description: Date indicating the beginning of the aggregation
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endTime
+        in: query
+        description: Date indicating the end of the aggregation
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "400":
+          description: Malformed request
+        "500":
+          description: An error occurred on the server side
+        "200":
+          description: Workloads list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workload'
+  /stub/workloads/{workloadId}:
+    get:
+      tags:
+      - stub-controller
+      description: Get data and metadata about a specific workload
+      operationId: getWorkload
+      parameters:
+      - name: workloadId
+        in: path
+        description: Unique workload ID
+        required: true
+        schema:
+          type: string
+      - name: startTime
+        in: query
+        description: Date indicating the beginning of the aggregation
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endTime
+        in: query
+        description: Date indicating the end of the aggregation
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "400":
+          description: Malformed request
+        "200":
+          description: Specific workload information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workload'
+        "500":
+          description: An error occurred on the server side
+  /stub/nodes:
+    get:
+      tags:
+      - stub-controller
+      description: Get data and metadata about all worker nodes
+      operationId: getNodes
+      parameters:
+      - name: startTime
+        in: query
+        description: Date indicating the beginning of the aggregation
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endTime
+        in: query
+        description: Date indicating the end of the aggregation
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "400":
+          description: Malformed request
+        "500":
+          description: An error occurred on the server side
+        "200":
+          description: Nodes list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+  /stub/nodes/{nodeId}:
+    get:
+      tags:
+      - stub-controller
+      description: Get data and metadata about a specific worker node
+      operationId: getNode
+      parameters:
+      - name: nodeId
+        in: path
+        description: Unique worker node ID
+        required: true
+        schema:
+          type: string
+      - name: startTime
+        in: query
+        description: Date indicating the beginning of the aggregation
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endTime
+        in: query
+        description: Date indicating the end of the aggregation
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "400":
+          description: Malformed request
+        "500":
+          description: An error occurred on the server side
+        "200":
+          description: Specific worker node information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+components:
+  schemas:
+    RunInfo:
+      type: object
+      properties:
+        nodeId:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+    Workload:
+      type: object
+      properties:
+        id:
+          type: string
+        runsOn:
+          $ref: '#/components/schemas/RunInfo'
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadResource'
+    WorkloadResource:
+      type: object
+      properties:
+        name:
+          type: string
+        unit:
+          type: string
+        demanded:
+          type: integer
+          format: int64
+        allocated:
+          type: integer
+          format: int64
+        used:
+          type: integer
+          format: int64
+    Node:
+      type: object
+      properties:
+        id:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeResource'
+    NodeResource:
+      type: object
+      properties:
+        name:
+          type: string
+        unit:
+          type: string
+        max:
+          type: integer
+          format: int64
+        available:
+          type: integer
+          format: int64

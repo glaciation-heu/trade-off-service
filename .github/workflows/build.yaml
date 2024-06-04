@@ -8,7 +8,7 @@ env:
   DOCKER_IMAGE_NAME: glaciation-heu/trade-off-service
 
 jobs:
-  build_web:
+  build_application:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -63,7 +63,7 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Create a github release
-        run: gh release create "${{ env.APP_VERSION }}" ./openapi.yaml
+        run: gh release create "${{ env.APP_VERSION }}" ./api-docs.yaml
         env:
           GH_TOKEN: ${{ github.token }}
 
