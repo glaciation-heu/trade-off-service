@@ -2,5 +2,5 @@ apiVersion: v2
 name: trade-off-service
 description: Trade off service component Helm chart.
 type: application
-version: ""
-appVersion: ""
+version: "0.0.0"
+appVersion: "0.0.0"
