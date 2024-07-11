@@ -1,47 +1,167 @@
 openapi: 3.0.1
 servers:
 - url: http://localhost:8080/api/v1
-  description: OpenApi specs url
+  description: Server base url
 paths:
   /stub/workloads:
     get:
       tags:
       - stub-controller
-      description: Get data and metadata about all workloads
       operationId: getWorkloads
       parameters:
       - name: startTime
         in: query
-        description: Date indicating the beginning of the aggregation
         required: true
         schema:
           type: string
           format: date-time
       - name: endTime
         in: query
-        description: Date indicating the end of the aggregation
         required: true
         schema:
           type: string
           format: date-time
       responses:
-        "400":
-          description: Malformed request
-        "500":
-          description: An error occurred on the server side
         "200":
-          description: Workloads list
+          description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: '#/components/schemas/Workload'
+                type: object
   /stub/workloads/{workloadId}:
     get:
       tags:
       - stub-controller
-      description: Get data and metadata about a specific workload
       operationId: getWorkload
       parameters:
+      - name: workloadId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: startTime
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endTime
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /stub/nodes:
+    get:
+      tags:
+      - stub-controller
+      operationId: getNodes
+      parameters:
+      - name: startTime
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endTime
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /stub/nodes/{nodeId}:
+    get:
+      tags:
+      - stub-controller
+      operationId: getNode
+      parameters:
+      - name: nodeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: startTime
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endTime
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /clusters/{clusterId}/workloads:
+    get:
+      tags:
+      - clusters-controller
+      description: Get all workloads' data and metadata
+      operationId: getWorkloads_1
+      parameters:
+      - name: clusterId
+        in: path
+        description: Unique identifier for the specific cluster
+        required: true
+        schema:
+          type: string
+      - name: startTime
+        in: query
+        description: Starting date for the aggregation
+        required: true
+        schema:
+          type: string
+      - name: endTime
+        in: query
+        description: End date for the aggregation
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Array of workloads returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workload'
+        "400":
+          description: Malformed request
+        "500":
+          description: An error occurred on the server side
+  /clusters/{clusterId}/workloads/{workloadId}:
+    get:
+      tags:
+      - clusters-controller
+      description: Get data and metadata about a specific workload
+      operationId: getWorkload_1
+      parameters:
+      - name: clusterId
+        in: path
+        description: Unique identifier for the specific cluster
+        required: true
+        schema:
+          type: string
       - name: workloadId
         in: path
         description: Unique workload ID
@@ -50,68 +170,78 @@ paths:
           type: string
       - name: startTime
         in: query
-        description: Date indicating the beginning of the aggregation
+        description: Starting date for the aggregation
         required: true
         schema:
           type: string
-          format: date-time
       - name: endTime
         in: query
-        description: Date indicating the end of the aggregation
+        description: End date for the aggregation
         required: true
         schema:
           type: string
-          format: date-time
       responses:
-        "400":
-          description: Malformed request
         "200":
-          description: Specific workload information
+          description: Workload found and returned
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Workload'
-        "500":
-          description: An error occurred on the server side
-  /stub/nodes:
-    get:
-      tags:
-      - stub-controller
-      description: Get data and metadata about all worker nodes
-      operationId: getNodes
-      parameters:
-      - name: startTime
-        in: query
-        description: Date indicating the beginning of the aggregation
-        required: true
-        schema:
-          type: string
-          format: date-time
-      - name: endTime
-        in: query
-        description: Date indicating the end of the aggregation
-        required: true
-        schema:
-          type: string
-          format: date-time
-      responses:
         "400":
           description: Malformed request
         "500":
           description: An error occurred on the server side
+        "404":
+          description: Workload with provided ID not found
+  /clusters/{clusterId}/nodes:
+    get:
+      tags:
+      - clusters-controller
+      description: Get all worker nodes' data and metadata
+      operationId: getNodes_1
+      parameters:
+      - name: clusterId
+        in: path
+        description: Unique identifier for the specific cluster
+        required: true
+        schema:
+          type: string
+      - name: startTime
+        in: query
+        description: Starting date for the aggregation
+        required: true
+        schema:
+          type: string
+      - name: endTime
+        in: query
+        description: End date for the aggregation
+        required: true
+        schema:
+          type: string
+      responses:
         "200":
-          description: Nodes list
+          description: Array of worker nodes returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Node'
-  /stub/nodes/{nodeId}:
+                $ref: '#/components/schemas/Workload'
+        "400":
+          description: Malformed request
+        "500":
+          description: An error occurred on the server side
+  /clusters/{clusterId}/nodes/{nodeId}:
     get:
       tags:
-      - stub-controller
+      - clusters-controller
       description: Get data and metadata about a specific worker node
-      operationId: getNode
+      operationId: getNode_1
       parameters:
+      - name: clusterId
+        in: path
+        description: Unique identifier for the specific cluster
+        required: true
+        schema:
+          type: string
       - name: nodeId
         in: path
         description: Unique worker node ID
@@ -120,29 +250,29 @@ paths:
           type: string
       - name: startTime
         in: query
-        description: Date indicating the beginning of the aggregation
+        description: Starting date for the aggregation
         required: true
         schema:
           type: string
-          format: date-time
       - name: endTime
         in: query
-        description: Date indicating the end of the aggregation
+        description: End date for the aggregation
         required: true
         schema:
           type: string
-          format: date-time
       responses:
-        "400":
-          description: Malformed request
-        "500":
-          description: An error occurred on the server side
         "200":
-          description: Specific worker node information
+          description: Worker node found and returned
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Node'
+        "400":
+          description: Malformed request
+        "500":
+          description: An error occurred on the server side
+        "404":
+          description: Worker node with provided ID not found
 components:
   schemas:
     RunInfo:
