@@ -12,6 +12,16 @@ entries:
     - https://glaciation-heu.github.io/trade-off-service/helm-charts/trade-off-service-1.0.0.tgz
     version: 1.0.0
   - apiVersion: v2
+    appVersion: 1.0.0-dev.1.main.25960680
+    created: "2024-08-23T17:58:21.411445196Z"
+    description: Trade off service component Helm chart.
+    digest: 257997699a1bb13796808e5a29ae6b4a26c9517e738c637aff7f5544275251ec
+    name: trade-off-service
+    type: application
+    urls:
+    - https://glaciation-heu.github.io/trade-off-service/helm-charts/trade-off-service-1.0.0-dev.1.main.25960680.tgz
+    version: 1.0.0-dev.1.main.25960680
+  - apiVersion: v2
     appVersion: 1.0.0-dev.0.main.2ac1b8b4
     created: "2024-08-23T17:45:44.618453357Z"
     description: Trade off service component Helm chart.
@@ -111,4 +121,4 @@ entries:
     urls:
     - https://glaciation-heu.github.io/trade-off-service/helm-charts/trade-off-service-0.0.0.tgz
     version: 0.0.0
-generated: "2024-08-23T17:45:44.61803532Z"
+generated: "2024-08-23T17:58:21.410955649Z"
