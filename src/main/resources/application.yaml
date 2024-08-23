@@ -1,3 +1,71 @@
 server:
+  port: 8082
   servlet:
     context-path: "/api/v1"
+
+metadata-service:
+  url: http://metadata.integration/api/v0/graph/search
+  node-sparql-query: SELECT * WHERE { {0} <glc:hasMeasurement> ?measurement . ?measurement <glc:hasDescription> ?key . ?measurement <glc:hasValue> ?value . ?measurement <glc:measuredIn> ?unit . filter(?start > "{1}"^^xsd:integer && ?end < "{2}"^^xsd:integer) }
+  nodes-sparql-query: SELECT * WHERE { ?container <glc:hasDescription> "Pod" . ?measurement <glc:hasDescription> ?key . ?measurement <glc:hasValue> ?value . ?measurement <glc:measuredIn> ?unit }
+  workload-sparql-query: "SELECT * WHERE (?s ?p ?o) {0}"
+  workloads-sparql-query: "SELECT * WHERE (?s ?p ?o)"
+
+prometheus:
+  url: https://prometheus.integration/api/v1/query
+
+metrics:
+  metricNameKey: key
+  metricValueKey: value
+  metricUnitKey: unit
+  nodeIdKey: node
+  workloadIdKey: workload
+  nodes:
+    - name: cpu
+      mappings:
+        - key: max
+          dkgName: CPU.Usage
+        - key: available
+    #          promql: sum(rate(node_cpu_seconds_total{mode="idle", node="${nodeId}"}[5m]))
+    #    - name: gpu
+    #      dkgName: GPU
+    #      mappings:
+    #        - key: max
+    #          dkgName: gpu-capacity-max
+    #        - key: available
+    #          promql:
+    - name: memory
+      mappings:
+        - key: max
+          dkgName: RAM.Usage
+        - key: available
+    #          promql: node_memory_MemFree_bytes{instance="${nodeId}", app_kubernetes_io_component="metrics"}
+    - name: storage
+      mappings:
+        - key: max
+          dkgName: Storage.Usage
+        - key: available
+  #          promql: kubelet_volume_stats_available_bytes{instance="${nodeId}"}/ (1024 * 1024)
+  #    - name: network
+  #      dkgName: Network
+  #      mappings:
+  #        - key: max
+  #          influxName:
+  #        - key: available
+  #          promql:
+  workloads:
+    - name: cpu
+      mappings:
+        - key: demanded
+          dkgName: CPU.Capacity
+        - key: allocated
+          dkgName: CPU.Allocated
+        - key: used
+          promql: sum(rate(container_cpu_usage_seconds_total[2m])) by (pod)
+    - name: memory
+      mappings:
+        - key: demanded
+          dkgName: RAM.Allocated
+        - key: allocated
+          dkgName: RAM.Capacity
+        - key: used
+          promql: sum(container_memory_working_set_bytes) by (pod) /(1024*1024)
