@@ -30,9 +30,13 @@ resources: {}
 
 livenessProbe:
   httpGet:
-    path: /
-    port: http
+    path: /api/v1/health
+    port: 8082
+  initialDelaySeconds: 10
+  periodSeconds: 5
 readinessProbe:
   httpGet:
-    path: /
-    port: http
+    path: /api/v1/health
+    port: 8082
+  initialDelaySeconds: 10
+  periodSeconds: 5

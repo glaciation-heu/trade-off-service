@@ -38,6 +38,7 @@ public class ClustersController {
             @Parameter(description = "Starting date for the aggregation") @RequestParam String startTime,
             @Parameter(description = "End date for the aggregation") @RequestParam String endTime
     ) {
+        logger.info("Received request: GET /{}/workloads", clusterId);
         return this.workloadService.getWorkloads(startTime, endTime);
     }
 
@@ -55,6 +56,7 @@ public class ClustersController {
             @Parameter(description = "Starting date for the aggregation") @RequestParam String startTime,
             @Parameter(description = "End date for the aggregation") @RequestParam String endTime
     ) {
+        logger.info("Received request: GET /{}/workloads/{}", clusterId, workloadId);
         return workloadService.getWorkload(workloadId, startTime, endTime);
     }
 
@@ -70,6 +72,7 @@ public class ClustersController {
             @Parameter(description = "Starting date for the aggregation") @RequestParam String startTime,
             @Parameter(description = "End date for the aggregation") @RequestParam String endTime
     ) {
+        logger.info("Received request: GET /{}/nodes", clusterId);
         return this.nodeService.getNodes(startTime, endTime);
     }
 
@@ -87,6 +90,7 @@ public class ClustersController {
             @Parameter(description = "Starting date for the aggregation") @RequestParam String startTime,
             @Parameter(description = "End date for the aggregation") @RequestParam String endTime
     ) {
+        logger.info("Received request: GET /{}/nodes/{}", clusterId, nodeId);
         return this.nodeService.getNode(nodeId, startTime, endTime);
     }
 }
