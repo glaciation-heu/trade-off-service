@@ -41,3 +41,5 @@ readinessProbe:
     port: 8082
   initialDelaySeconds: 10
   periodSeconds: 5
+
+ingressHostName: trade-off-service
