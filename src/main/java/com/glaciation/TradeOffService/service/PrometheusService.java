@@ -12,6 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+
 @Service
 public class PrometheusService {
     private final Logger logger = LoggerFactory.getLogger(PrometheusService.class);
@@ -23,7 +29,8 @@ public class PrometheusService {
     private JsonNode query(String query) {
         try {
             HttpEntity<?> entity = new HttpEntity<>(new HttpHeaders());
-            ResponseEntity<JsonNode> response = restTemplate.postForEntity(prometheusUrl + "?query=" + query, entity, JsonNode.class);
+            logger.info("Sending query to Prometheus: {}\n{}", prometheusUrl, query);
+            ResponseEntity<JsonNode> response = restTemplate.postForEntity(prometheusUrl, entity, JsonNode.class, query);
             return response.getBody();
         } catch (RestClientException e) {
             logger.error("Got exception {}: {}", e.getClass().getName(), e.getMessage());
@@ -37,6 +44,49 @@ public class PrometheusService {
 
         if (body == null) return null;
 
-        return body.get("data").get("result").get(1);
+        if (body.get("data").get("result").isEmpty()) return null;
+
+        return body.get("data").get("result").get(0).get("value").get(1);
+    }
+
+    public String truncateTimestamp(Date endTime) {
+        String endTimeString = String.valueOf(endTime.getTime());
+        return endTimeString.substring(0, 10);
+    }
+
+    public String calculateDuration(Date startDate, Date endDate) {
+        long startTime = startDate.getTime();
+        long endTime = endDate.getTime();
+
+        LocalDateTime start = Instant.ofEpochMilli(startTime)
+                .atZone(ZoneId.of("UTC"))
+                .toLocalDateTime();
+        LocalDateTime end = Instant.ofEpochMilli(endTime)
+                .atZone(ZoneId.of("UTC"))
+                .toLocalDateTime();
+
+        Duration duration = Duration.between(start, end);
+        long durationInMs = duration.toMillis();
+
+        if (durationInMs < 1000) return durationInMs + "ms";
+        else if (durationInMs < 1000 * 60) {
+            long durationInSeconds = (durationInMs / 1000) % 60;
+            return durationInSeconds + "s";
+        } else if (durationInMs < 1000 * 60 * 60) {
+            long durationInMinutes = (durationInMs / (1000 * 60)) % 60;
+            return durationInMinutes + "m";
+        } else if (durationInMs < 1000 * 60 * 60 * 24) {
+            long durationInHours = (durationInMs / (1000 * 60 * 60)) % 24;
+            return durationInHours + "h";
+        } else if (durationInMs < 1000 * 60 * 60 * 24 * 7) {
+            long durationInDays = (durationInMs / (1000 * 60 * 60 * 24)) % 7;
+            return durationInDays + "d";
+        } else if (durationInMs < 1000L * 60 * 60 * 24 * 7 * 52) {
+            long durationInWeeks = (durationInMs / (1000 * 60 * 60 * 24 * 7)) % 52;
+            return durationInWeeks + "w";
+        } else {
+            long durationInYears = durationInMs / (1000L * 60 * 60 * 24 * 365);
+            return durationInYears + "y";
+        }
     }
 }
