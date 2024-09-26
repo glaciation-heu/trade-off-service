@@ -14,8 +14,35 @@ public class MetricsConfiguration {
     String metricUnitKey;
     String nodeIdKey;
     String workloadIdKey;
+    String workloadNodeKey;
+    String workloadStartTimeKey;
+    String resourceIdPattern;
     List<NodeMetric> nodes;
     List<NodeMetric> workloads;
+
+    public String getWorkloadNodeKey() {
+        return workloadNodeKey;
+    }
+
+    public void setWorkloadNodeKey(String workloadNodeKey) {
+        this.workloadNodeKey = workloadNodeKey;
+    }
+
+    public String getWorkloadStartTimeKey() {
+        return workloadStartTimeKey;
+    }
+
+    public void setWorkloadStartTimeKey(String workloadStartTimeKey) {
+        this.workloadStartTimeKey = workloadStartTimeKey;
+    }
+
+    public String getResourceIdPattern() {
+        return resourceIdPattern;
+    }
+
+    public void setResourceIdPattern(String resourceIdPattern) {
+        this.resourceIdPattern = resourceIdPattern;
+    }
 
     public String getMetricUnitKey() {
         return metricUnitKey;
