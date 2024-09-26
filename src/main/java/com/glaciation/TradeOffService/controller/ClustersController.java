@@ -13,8 +13,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Date;
 
 @RestController
 @RequestMapping("/clusters")
@@ -35,8 +38,8 @@ public class ClustersController {
     })
     public ResponseEntity<?> getWorkloads(
             @Parameter(description = "Unique identifier for the specific cluster") @PathVariable String clusterId,
-            @Parameter(description = "Starting date for the aggregation") @RequestParam String startTime,
-            @Parameter(description = "End date for the aggregation") @RequestParam String endTime
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm'Z'") @Parameter(description = "Date indicating the beginning of the aggregation") Date startTime,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm'Z'") @Parameter(description = "Date indicating the end of the aggregation") Date endTime
     ) {
         logger.info("Received request: GET /{}/workloads", clusterId);
         return this.workloadService.getWorkloads(startTime, endTime);
@@ -53,8 +56,8 @@ public class ClustersController {
     public ResponseEntity<Object> getWorkload(
             @Parameter(description = "Unique identifier for the specific cluster") @PathVariable String clusterId,
             @Parameter(description = "Unique workload ID") @PathVariable String workloadId,
-            @Parameter(description = "Starting date for the aggregation") @RequestParam String startTime,
-            @Parameter(description = "End date for the aggregation") @RequestParam String endTime
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm'Z'") @Parameter(description = "Date indicating the beginning of the aggregation") Date startTime,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm'Z'") @Parameter(description = "Date indicating the end of the aggregation") Date endTime
     ) {
         logger.info("Received request: GET /{}/workloads/{}", clusterId, workloadId);
         return workloadService.getWorkload(workloadId, startTime, endTime);
@@ -69,8 +72,8 @@ public class ClustersController {
     })
     public ResponseEntity<?> getNodes(
             @Parameter(description = "Unique identifier for the specific cluster") @PathVariable String clusterId,
-            @Parameter(description = "Starting date for the aggregation") @RequestParam String startTime,
-            @Parameter(description = "End date for the aggregation") @RequestParam String endTime
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm'Z'") @Parameter(description = "Date indicating the beginning of the aggregation") Date startTime,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm'Z'") @Parameter(description = "Date indicating the end of the aggregation") Date endTime
     ) {
         logger.info("Received request: GET /{}/nodes", clusterId);
         return this.nodeService.getNodes(startTime, endTime);
@@ -87,8 +90,8 @@ public class ClustersController {
     public ResponseEntity<?> getNode(
             @Parameter(description = "Unique identifier for the specific cluster") @PathVariable String clusterId,
             @Parameter(description = "Unique worker node ID") @PathVariable String nodeId,
-            @Parameter(description = "Starting date for the aggregation") @RequestParam String startTime,
-            @Parameter(description = "End date for the aggregation") @RequestParam String endTime
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm'Z'") @Parameter(description = "Date indicating the beginning of the aggregation") Date startTime,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm'Z'") @Parameter(description = "Date indicating the end of the aggregation") Date endTime
     ) {
         logger.info("Received request: GET /{}/nodes/{}", clusterId, nodeId);
         return this.nodeService.getNode(nodeId, startTime, endTime);
