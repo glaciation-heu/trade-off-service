@@ -1,6 +1,5 @@
 package com.glaciation.TradeOffService.configuration;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,6 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class CustomExceptionHandler {
-
     @Autowired
     ObjectMapper mapper;
 
@@ -26,15 +24,7 @@ public class CustomExceptionHandler {
     public ResponseEntity<Object> handleHttpException(HttpClientErrorException ex, WebRequest request) {
         Map<String, Object> map = new HashMap<>();
 
-        String message;
-        try {
-            JsonNode error = mapper.readTree(ex.getResponseBodyAsString());
-            message = error.get("message").asText();
-        } catch (JsonProcessingException e) {
-            message = ex.getResponseBodyAsString();
-        }
-
-        map.put("message", message);
+        map.put("message", ex.getResponseBodyAsString());
         map.put("status", ex.getStatusText());
         map.put("statusCode", ex.getStatusCode().value());
         JsonNode body = mapper.valueToTree(map);

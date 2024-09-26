@@ -3,6 +3,10 @@ server:
   servlet:
     context-path: "/api/v1"
 
+spring:
+  application:
+    name: Trade-Off Service
+
 metadata-service:
   url: http://metadata.integration/api/v0/graph/search
   node-sparql-query: SELECT * WHERE { {0} <glc:hasMeasurement> ?measurement . ?measurement <glc:hasDescription> ?key . ?measurement <glc:hasValue> ?value . ?measurement <glc:measuredIn> ?unit . filter(?start > "{1}"^^xsd:integer && ?end < "{2}"^^xsd:integer) }
