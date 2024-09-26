@@ -4,18 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.glaciation.TradeOffService.configuration.MetricsConfiguration;
-import org.apache.commons.text.StringSubstitutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpServerErrorException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.MessageFormat;
+import java.util.*;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -29,18 +30,32 @@ public class NodeService {
     @Autowired
     MetricsConfiguration metricsConfiguration;
     @Autowired
+    Utils utils;
+    @Autowired
     ObjectMapper objectMapper;
 
-    public ResponseEntity<Object> getNode(String nodeId, String startTime, String endTime) {
+    public ResponseEntity<Object> getNode(String nodeId, Date startTime, Date endTime) {
+        utils.validateDates(startTime, endTime);
+
         // get node metadata
         JsonNode nodeMetadata = metadataService.getNodeMetadata(nodeId, startTime, endTime);
 
-        return ResponseEntity.ok(this.createNodePayload(nodeId, (ArrayNode) nodeMetadata));
+        if (nodeMetadata == null || nodeMetadata.isEmpty()) {
+            logger.warn("Response from Metadata Service is empty!");
+        }
+
+        return ResponseEntity.ok(this.createNodePayload(nodeId, startTime, endTime, (ArrayNode) nodeMetadata));
     }
 
-    public ResponseEntity<JsonNode> getNodes(String startTime, String endTime) {
+    public ResponseEntity<JsonNode> getNodes(Date startTime, Date endTime) {
+        utils.validateDates(startTime, endTime);
+
         // get nodes metadata
         ArrayNode nodesMetadata = (ArrayNode) metadataService.getNodesMetadata(startTime, endTime);
+
+        if (nodesMetadata == null || nodesMetadata.isEmpty()) {
+            logger.warn("Response from Metadata Service is empty!");
+        }
 
         String nodeIdKey = metricsConfiguration.getNodeIdKey();
         Map<String, ArrayNode> nodesMetadataMap = new HashMap<>();
@@ -48,7 +63,12 @@ public class NodeService {
 
         // iterating over response records and invoking the mapping function
         nodesMetadataStream.forEach(record -> {
-            String nodeId = record.get(nodeIdKey).textValue();
+            if (!record.has(nodeIdKey)) {
+                logger.warn("Record does not contain key: {}", nodeIdKey);
+                return;
+            }
+
+            String nodeId = record.get(nodeIdKey).get("value").textValue();
             if (nodesMetadataMap.containsKey(nodeId)) {
                 nodesMetadataMap.get(nodeId).add(record);
             } else {
@@ -57,9 +77,20 @@ public class NodeService {
                 nodesMetadataMap.put(nodeId, records);
             }
         });
+        logger.info("Nodes metadata map: {}", nodesMetadataMap);
 
         List<JsonNode> outputNodes = new ArrayList<>();
-        nodesMetadataMap.forEach((id, records) -> outputNodes.add(this.createNodePayload(id, records)));
+        nodesMetadataMap.forEach((resourceId, records) -> {
+            String resourceIdPattern = metricsConfiguration.getResourceIdPattern();
+            Pattern pattern = Pattern.compile(resourceIdPattern);
+            Matcher matcher = pattern.matcher(resourceId);
+            if (!matcher.find()) {
+                logger.error("Property 'resourceIdPattern' not matching any IDs");
+                throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            String id = matcher.group();
+            outputNodes.add(this.createNodePayload(id, startTime, endTime, records));
+        });
 
         Map<String, Object> result = new HashMap<>();
         result.put("worker_nodes", outputNodes);
@@ -67,7 +98,8 @@ public class NodeService {
         return ResponseEntity.ok(objectMapper.valueToTree(result));
     }
 
-    private JsonNode createNodePayload(String nodeId, ArrayNode metadataRecords) {
+    private JsonNode createNodePayload(String nodeId, Date startTime, Date endTime, ArrayNode metadataRecords) {
+        logger.info("Creating payload for node '{}'", nodeId);
         Map<String, Object> result = new HashMap<>();
         result.put("node_id", nodeId);
 
@@ -90,21 +122,32 @@ public class NodeService {
 
                 // perform query to prometheus
                 if (mapping.getDkgName() == null) {
-                    Map<String, String> parameters = new HashMap<>();
-                    parameters.put("nodeId", nodeId);
-                    StringSubstitutor substitutor = new StringSubstitutor(parameters);
-                    String query = substitutor.replace(mapping.getPromql());
+                    String window = prometheusService.calculateDuration(startTime, endTime);
+                    String truncatedEndTime = prometheusService.truncateTimestamp(endTime);
+                    String query = MessageFormat.format(mapping.getPromql(), nodeId, truncatedEndTime, window);
                     JsonNode queryResult = prometheusService.performQuery(query);
-                    Long value = queryResult.longValue();
-                    resourceMap.put(mapping.getKey(), value);
+                    if (queryResult != null) {
+                        String value = queryResult.textValue();
+                        logger.info("Setting {} to value: {}", mapping.getKey(), value);
+                        resourceMap.put(mapping.getKey(), value);
+                    }
                 } else {
                     // get metadata
-                    JsonNode metricNode = recordsStreamSupplier.get().filter(record -> record.get(metricsConfiguration.getMetricNameKey()).get("value").textValue().equals(mapping.getDkgName())).findFirst().orElse(null);
+                    logger.info("Looking for '{}' metric by '{}' key", mapping.getDkgName(), metricsConfiguration.getMetricNameKey());
+                    JsonNode metricNode = recordsStreamSupplier.get().filter(record -> {
+                        JsonNode matchingNode = record.get(metricsConfiguration.getMetricNameKey());
+                        if (matchingNode == null) {
+                            logger.warn("Record has no '{}' key", metricsConfiguration.getMetricNameKey());
+                            return false;
+                        }
+                        return matchingNode.get("value").textValue().equals(mapping.getDkgName());
+                    }).findFirst().orElse(null);
 
                     if (metricNode == null) {
-                        logger.info("Metric {} not found in metadata payload", mapping.getDkgName());
+                        logger.info("Metric '{}' not found in metadata payload", mapping.getDkgName());
                         return;
                     }
+                    logger.info("Metric node: {}", metricNode);
 
                     String value = metricNode.get(metricsConfiguration.getMetricValueKey()).get("value").textValue();
                     resourceMap.put(mapping.getKey(), value);
