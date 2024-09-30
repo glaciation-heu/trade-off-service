@@ -43,3 +43,370 @@ readinessProbe:
   periodSeconds: 5
 
 ingressHostName: trade-off-service
+
+config:
+  server:
+    port: 8082
+    servlet:
+      context-path: "/api/v1"
+
+  spring:
+    application:
+      name: Trade-Off Service
+
+  metadata-service:
+    url: http://metadata.integration/api/v0/graph?query={query}
+    resource-id-template: <https://kubernetes.local/'#'{0}>
+    node-sparql-query: |
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+      SELECT ?graphURI ?node ?measurement ?measurementName ?timestamp ?value ?unit WHERE '{'
+        BIND({0} as ?intervalStart).
+        BIND({1} as ?intervalEnd).
+        '{'
+          SELECT ?graphURI ?timeslice WHERE '{'
+            GRAPH ?graphURI '{}'
+            FILTER(
+              regex(str(?graphURI), "^timestamp:")
+            )
+            BIND(xsd:integer(replace(str(?graphURI), "^timestamp:", "")) as ?timeslice).
+          '}'
+        '}'
+        FILTER(
+          ?timeslice >= ?intervalStart
+          && ?timeslice < ?intervalEnd
+        )
+        GRAPH ?graphURI '{'
+          SELECT ?node ?measurement ?measurementName ?timestamp ?value ?unit
+          WHERE '{'
+            ?node rdf:type <glc:WorkProducingResource> .
+            ?node <glc:hasDescription> "KubernetesWorkerNode".
+            '{'
+              ?node <glc:hasMeasurement> ?measurement.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:hasValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+            UNION
+            '{'
+              ?node <glc:hasSubResource> ?subResource.
+              ?subResource <glc:hasMeasurement> ?measurement.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:hasValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+            filter(
+              ?node = {2}
+            )
+          '}'
+          ORDER BY DESC(?timestamp)
+        '}'
+      '}'
+    nodes-sparql-query: |
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+      SELECT ?graphURI ?node ?measurement ?measurementName ?timestamp ?value ?unit WHERE '{'
+        BIND({0} as ?intervalStart).
+        BIND({1} as ?intervalEnd).
+        '{'
+          SELECT ?graphURI ?timeslice WHERE '{'
+            GRAPH ?graphURI '{}'
+            FILTER(
+              regex(str(?graphURI), "^timestamp:")
+            )
+            BIND(xsd:integer(replace(str(?graphURI), "^timestamp:", "")) as ?timeslice).
+          '}'
+        '}'
+        FILTER(
+          ?timeslice >= ?intervalStart
+          && ?timeslice < ?intervalEnd
+        )
+        GRAPH ?graphURI '{'
+          SELECT ?node ?measurement ?measurementName ?timestamp ?value ?unit
+          WHERE '{'
+            ?node rdf:type <glc:WorkProducingResource> .
+            ?node <glc:hasDescription> "KubernetesWorkerNode".
+            '{'
+              ?node <glc:hasMeasurement> ?measurement.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:hasValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+            UNION
+            '{'
+              ?node <glc:hasSubResource> ?subResource.
+              ?subResource <glc:hasMeasurement> ?measurement.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:hasValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+          '}'
+          ORDER BY DESC(?timestamp)
+        '}'
+      '}'
+    workload-sparql-query: |
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+      SELECT ?graphURI ?pod ?node ?measurement ?measurementName ?startTime ?timestamp ?value ?unit WHERE '{'
+        BIND({2} as ?intervalEnd).
+        BIND({1} as ?intervalStart).
+        '{'
+          SELECT ?graphURI ?timeslice WHERE '{'
+            GRAPH ?graphURI '{}'
+            FILTER(
+              regex(str(?graphURI), "^timestamp:")
+            )
+            BIND(xsd:integer(replace(str(?graphURI), "^timestamp:", "")) as ?timeslice).
+          '}'
+        '}'
+        FILTER(
+          ?timeslice >= ?intervalStart && ?timeslice < ?intervalEnd
+        )
+        GRAPH ?graphURI '{'
+          SELECT ?pod ?node ?measurement ?measurementName ?startTime ?timestamp ?value ?unit WHERE '{'
+            ?task_definition rdf:type <glc:AssignedTask> .
+            '{'
+              ?task_definition <glc:hasConstraint> ?measurement.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:maxValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+            UNION
+            '{'
+              ?task_definition <glc:makes> ?pod.
+              ?pod <glc:hasDescription> "Pod".
+              ?pod <glc:hasMeasurement> ?measurement.
+              ?pod <glc:consumes> ?node.
+              ?pod <glc:hasStatus> ?status.
+              ?status <glc:startTime> ?startTime.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:hasValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+            UNION
+            '{'
+              ?task_definition <glc:makes> ?replicaset.
+              ?replicaset <glc:hasDescription> "ReplicaSet".
+              ?replicaset <glc:makes> ?pod.
+              ?pod <glc:hasDescription> "Pod".
+              ?pod <glc:hasMeasurement> ?measurement.
+              ?pod <glc:consumes> ?node.
+              ?pod <glc:hasStatus> ?status.
+              ?status <glc:startTime> ?startTime.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:hasValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+            filter(
+              ?pod = {0}
+            )
+          '}'
+          ORDER BY DESC(?timestamp)
+        '}'
+      '}'
+    workloads-sparql-query: |
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+      SELECT ?graphURI ?pod ?node ?measurement ?measurementName ?startTime ?timestamp ?value ?unit WHERE '{'
+        BIND({2} as ?intervalEnd).
+        BIND({1} as ?intervalStart).
+        '{'
+          SELECT ?graphURI ?timeslice WHERE '{'
+            GRAPH ?graphURI '{}'
+            FILTER(
+              regex(str(?graphURI), "^timestamp:")
+            )
+            BIND(xsd:integer(replace(str(?graphURI), "^timestamp:", "")) as ?timeslice).
+          '}'
+        '}'
+        FILTER(
+          ?timeslice >= ?intervalStart && ?timeslice < ?intervalEnd
+        )
+        GRAPH ?graphURI '{'
+          SELECT ?pod ?node ?measurement ?measurementName ?startTime ?timestamp ?value ?unit WHERE '{'
+            ?task_definition rdf:type <glc:AssignedTask> .
+            '{'
+              ?task_definition <glc:hasConstraint> ?measurement.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:maxValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+            UNION
+            '{'
+              ?task_definition <glc:makes> ?pod.
+              ?pod <glc:hasDescription> "Pod".
+              ?pod <glc:hasMeasurement> ?measurement.
+              ?pod <glc:consumes> ?node.
+              ?pod <glc:hasStatus> ?status.
+              ?status <glc:startTime> ?startTime.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:hasValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+            UNION
+            '{'
+              ?task_definition <glc:makes> ?replicaset.
+              ?replicaset <glc:hasDescription> "ReplicaSet".
+              ?replicaset <glc:makes> ?pod.
+              ?pod <glc:hasDescription> "Pod".
+              ?pod <glc:hasMeasurement> ?measurement.
+              ?pod <glc:consumes> ?node.
+              ?pod <glc:hasStatus> ?status.
+              ?status <glc:startTime> ?startTime.
+              ?measurement <glc:hasDescription> ?measurementName.
+              ?measurement <glc:hasTimestamp> ?timestamp.
+              ?measurement <glc:hasValue> ?value.
+              ?measurement <glc:measuredIn> ?unit.
+            '}'
+          '}'
+          ORDER BY DESC(?timestamp)
+        '}'
+      '}'
+
+  prometheus:
+    url: http://prometheus.integration/api/v1/query?query={query}
+
+  metrics:
+    metricNameKey: measurementName
+    metricValueKey: value
+    metricUnitKey: unit
+    nodeIdKey: node
+    workloadIdKey: workload
+    workloadNodeKey: node
+    workloadStartTimeKey: startTime
+    resourceIdPattern: (?<=https://kubernetes.local/#).*
+    nodes:
+      - name: cpu
+        mappings:
+          - key: max
+            dkgName: CPU.Capacity
+          - key: available
+            promql: |
+              label_replace(
+                sum(
+                  rate(
+                    node_cpu_seconds_total'{'mode="idle", node="{0}"'}'[{2}] @{1}
+                  )
+                ) by (node),
+                "resource",
+                "$1",
+                "node",
+                "(.+)"
+              )
+      - name: memory
+        mappings:
+          - key: max
+            dkgName: RAM.Capacity
+          - key: available
+            promql: |
+              label_replace(
+                node_memory_MemFree_bytes'{'node="{0}"'}' @{1},
+                "resource",
+                "$1",
+                "node",
+                "(.+)"
+              )
+      - name: storage
+        mappings:
+          - key: max
+            dkgName: Storage.Capacity
+          - key: available
+            promql: |
+              label_replace(
+                ephemeral_storage_node_available'{'node_name="{0}"'}' @{1},
+                "resource",
+                "$1",
+                "node_name",
+                "(.+)"
+              )
+    workloads:
+      - name: network
+        mappings:
+          - key: demanded
+            dkgName: Network.Allocated
+          - key: allocated
+            dkgName: Network.Capacity
+          - key: used
+            promql: |
+              label_join(
+                sum(
+                  rate(
+                    container_network_receive_bytes_total'{'pod="{0}"'}'[{2}] @{1}
+                  )
+                ) by (namespace, pod) +
+                sum(
+                  rate(
+                    container_network_transmit_bytes_total'{'pod="{0}"'}'[{2}] @{1}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )
+      - name: storage
+        mappings:
+          - key: demanded
+            dkgName: Storage.Allocated
+          - key: allocated
+            dkgName: Storage.Capacity
+          - key: used
+            promql: |
+              label_join(
+                ephemeral_storage_pod_usage'{'pod_name="{0}"'}' @{1},
+                "resource",
+                ".",
+                "pod_namespace",
+                "pod_name"
+              )
+      - name: cpu
+        mappings:
+          - key: demanded
+            dkgName: CPU.Allocated
+          - key: allocated
+            dkgName: CPU.Capacity
+          - key: used
+            promql: |
+              label_join(
+                sum(
+                  rate(
+                    container_cpu_usage_seconds_total'{'pod="{0}"'}'[{2}] @{1}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )
+      - name: memory
+        mappings:
+          - key: demanded
+            dkgName: RAM.Allocated
+          - key: allocated
+            dkgName: RAM.Capacity
+          - key: used
+            promql: |
+              label_join(
+                sum(
+                  rate(
+                    container_memory_working_set_bytes'{'pod="{0}"'}'[{2}] @{1}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )

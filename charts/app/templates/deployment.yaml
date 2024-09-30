@@ -44,6 +44,14 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: configuration
+              mountPath: /conf/application.yaml
+              subPath: application.yaml
+      volumes:
+        - name: configuration
+          configMap:
+            name: {{ include "app.fullname" . }}-config
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
