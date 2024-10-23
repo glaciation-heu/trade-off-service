@@ -20,16 +20,11 @@ metadata-service:
       '{'
         SELECT ?graphURI ?timeslice WHERE '{'
           GRAPH ?graphURI '{}'
-          FILTER(
-            regex(str(?graphURI), "^timestamp:")
-          )
+          FILTER(regex(str(?graphURI), "^timestamp:"))
           BIND(xsd:integer(replace(str(?graphURI), "^timestamp:", "")) as ?timeslice).
         '}'
       '}'
-      FILTER(
-        ?timeslice >= ?intervalStart
-        && ?timeslice < ?intervalEnd
-      )
+      FILTER(?timeslice >= ?intervalStart && ?timeslice < ?intervalEnd)
       GRAPH ?graphURI '{'
         SELECT ?node ?measurement ?measurementName ?timestamp ?value ?unit
         WHERE '{'
@@ -51,9 +46,7 @@ metadata-service:
             ?measurement <glc:hasValue> ?value.
             ?measurement <glc:measuredIn> ?unit.
           '}'
-          filter(
-            ?node = {2}
-          )
+          filter(?node = {2})
         '}'
         ORDER BY DESC(?timestamp)
       '}'
@@ -68,16 +61,11 @@ metadata-service:
       '{'
         SELECT ?graphURI ?timeslice WHERE '{'
           GRAPH ?graphURI '{}'
-          FILTER(
-            regex(str(?graphURI), "^timestamp:")
-          )
+          FILTER regex(str(?graphURI), "^timestamp:")
           BIND(xsd:integer(replace(str(?graphURI), "^timestamp:", "")) as ?timeslice).
         '}'
       '}'
-      FILTER(
-        ?timeslice >= ?intervalStart
-        && ?timeslice < ?intervalEnd
-      )
+      FILTER(?timeslice >= ?intervalStart && ?timeslice < ?intervalEnd)
       GRAPH ?graphURI '{'
         SELECT ?node ?measurement ?measurementName ?timestamp ?value ?unit
         WHERE '{'
@@ -107,127 +95,157 @@ metadata-service:
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     
-    SELECT ?graphURI ?pod ?node ?measurement ?measurementName ?startTime ?timestamp ?value ?unit WHERE '{'
-      BIND({2} as ?intervalEnd).
-      BIND({1} as ?intervalStart).
+    SELECT ?pod ?node ?measurement ?measurementName ?timestamp ?unit ?value ?startTime ?endTime WHERE '{'
+      BIND({0} as ?intervalStart).
+      BIND({1} as ?intervalEnd).
       '{'
         SELECT ?graphURI ?timeslice WHERE '{'
           GRAPH ?graphURI '{}'
-          FILTER(
-            regex(str(?graphURI), "^timestamp:")
-          )
+          FILTER regex(str(?graphURI), "^timestamp:")
           BIND(xsd:integer(replace(str(?graphURI), "^timestamp:", "")) as ?timeslice).
         '}'
       '}'
-      FILTER(
-        ?timeslice >= ?intervalStart && ?timeslice < ?intervalEnd
-      )
+      FILTER(?timeslice >= ?intervalStart && ?timeslice < ?intervalEnd)
       GRAPH ?graphURI '{'
-        SELECT ?pod ?node ?measurement ?measurementName ?startTime ?timestamp ?value ?unit WHERE '{'
-          ?task_definition rdf:type <glc:AssignedTask> .
-          '{'
+        '{'
+          SELECT ?pod ?measurement ?node ?measurementName ?ts ?value ?unit ?startTime ?endTime WHERE '{'
+            ?pod <glc:hasDescription> "Pod".
+            ?pod <glc:hasMeasurement> ?measurement.
+            ?pod <glc:consumes> ?node.
+            ?measurement <glc:hasDescription> ?measurementName.
+            ?measurement <glc:hasTimestamp> ?ts.
+            ?measurement <glc:hasValue> ?value.
+            ?measurement <glc:measuredIn> ?unit.
+            ?pod <glc:hasStatus> ?status.
+            OPTIONAL'{' ?status <glc:startTime> ?startTime '}'
+            OPTIONAL'{' ?status <glc:endTime> ?endTime '}'
+          '}'
+        '}'
+        UNION
+        '{'
+          SELECT ?pod ?measurement ?node ?measurementName ?ts ?value ?unit ?startTime ?endTime WHERE '{'
+            BIND(0 as ?ts).
+            ?pod <glc:hasDescription> "Pod".
+            ?pod <glc:consumes> ?node.
+            ?task_definition rdf:type <glc:AssignedTask> .
+            ?task_definition <glc:makes> ?pod.
             ?task_definition <glc:hasConstraint> ?measurement.
             ?measurement <glc:hasDescription> ?measurementName.
-            ?measurement <glc:hasTimestamp> ?timestamp.
             ?measurement <glc:maxValue> ?value.
             ?measurement <glc:measuredIn> ?unit.
-          '}'
-          UNION
-          '{'
-            ?task_definition <glc:makes> ?pod.
-            ?pod <glc:hasDescription> "Pod".
-            ?pod <glc:hasMeasurement> ?measurement.
-            ?pod <glc:consumes> ?node.
             ?pod <glc:hasStatus> ?status.
-            ?status <glc:startTime> ?startTime.
-            ?measurement <glc:hasDescription> ?measurementName.
-            ?measurement <glc:hasTimestamp> ?timestamp.
-            ?measurement <glc:hasValue> ?value.
-            ?measurement <glc:measuredIn> ?unit.
+            OPTIONAL'{' ?status <glc:startTime> ?startTime '}'
+            OPTIONAL'{' ?status <glc:endTime> ?endTime '}'
           '}'
-          UNION
-          '{'
-            ?task_definition <glc:makes> ?replicaset.
-            ?replicaset <glc:hasDescription> "ReplicaSet".
-            ?replicaset <glc:makes> ?pod.
-            ?pod <glc:hasDescription> "Pod".
-            ?pod <glc:hasMeasurement> ?measurement.
-            ?pod <glc:consumes> ?node.
-            ?pod <glc:hasStatus> ?status.
-            ?status <glc:startTime> ?startTime.
-            ?measurement <glc:hasDescription> ?measurementName.
-            ?measurement <glc:hasTimestamp> ?timestamp.
-            ?measurement <glc:hasValue> ?value.
-            ?measurement <glc:measuredIn> ?unit.
-          '}'
-          filter(
-            ?pod = {0}
-          )
         '}'
-        ORDER BY DESC(?timestamp)
+        UNION
+        '{'
+          SELECT ?pod ?measurement ?node ?measurementName ?ts ?value ?unit ?startTime ?endTime WHERE '{'
+            ?pod <glc:hasDescription> "Pod".
+            ?pod <glc:consumes> ?node.
+            ?replicaset <glc:hasDescription> "ReplicaSet".
+            ?replicaset rdf:type <glc:AssignedTask> .
+            ?replicaset <glc:makes> ?pod.
+            ?task_definition rdf:type <glc:AssignedTask> .
+            ?task_definition <glc:makes> ?replicaset.
+            ?task_definition <glc:hasConstraint> ?measurement.
+            ?measurement <glc:hasDescription> ?measurementName.
+            ?measurement <glc:hasTimestamp> ?ts.
+            ?measurement <glc:hasValue> ?value.
+            ?measurement <glc:measuredIn> ?unit.
+            ?pod <glc:hasStatus> ?status.
+            OPTIONAL'{' ?status <glc:startTime> ?startTime '}'
+            OPTIONAL'{' ?status <glc:endTime> ?endTime '}'
+          '}'
+        '}'
       '}'
+      FILTER(
+        regex(
+          xsd:string(?measurement),
+          "(uc2|kafka|mef-sog-uc1-wl|monitoring-stack-alertmanager|event-exporter)"
+        )
+      )
+      FILTER(?pod = {2})
+      BIND(IF(?ts = 0,xsd:integer(replace(str(?graphURI), "^timestamp:", "")),?ts) as ?timestamp)
     '}'
+    ORDER BY DESC(?measurement)
   workloads-sparql-query: |
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     
-    SELECT ?graphURI ?pod ?node ?measurement ?measurementName ?startTime ?timestamp ?value ?unit WHERE '{'
-      BIND({2} as ?intervalEnd).
-      BIND({1} as ?intervalStart).
+    SELECT ?pod ?node ?measurement ?measurementName ?timestamp ?unit ?value ?startTime ?endTime WHERE '{'
+      BIND({0} as ?intervalStart).
+      BIND({1} as ?intervalEnd).
       '{'
         SELECT ?graphURI ?timeslice WHERE '{'
           GRAPH ?graphURI '{}'
-          FILTER(
-            regex(str(?graphURI), "^timestamp:")
-          )
+          FILTER regex(str(?graphURI), "^timestamp:")
           BIND(xsd:integer(replace(str(?graphURI), "^timestamp:", "")) as ?timeslice).
         '}'
       '}'
-      FILTER(
-        ?timeslice >= ?intervalStart && ?timeslice < ?intervalEnd
-      )
+      FILTER(?timeslice >= ?intervalStart && ?timeslice < ?intervalEnd)
       GRAPH ?graphURI '{'
-        SELECT ?pod ?node ?measurement ?measurementName ?startTime ?timestamp ?value ?unit WHERE '{'
-          ?task_definition rdf:type <glc:AssignedTask> .
-          '{'
-            ?task_definition <glc:hasConstraint> ?measurement.
-            ?measurement <glc:hasDescription> ?measurementName.
-            ?measurement <glc:hasTimestamp> ?timestamp.
-            ?measurement <glc:maxValue> ?value.
-            ?measurement <glc:measuredIn> ?unit.
-          '}'
-          UNION
-          '{'
-            ?task_definition <glc:makes> ?pod.
+        '{'
+          SELECT ?pod ?measurement ?node ?measurementName ?ts ?value ?unit ?startTime ?endTime WHERE '{'
             ?pod <glc:hasDescription> "Pod".
             ?pod <glc:hasMeasurement> ?measurement.
             ?pod <glc:consumes> ?node.
-            ?pod <glc:hasStatus> ?status.
-            ?status <glc:startTime> ?startTime.
             ?measurement <glc:hasDescription> ?measurementName.
-            ?measurement <glc:hasTimestamp> ?timestamp.
+            ?measurement <glc:hasTimestamp> ?ts.
             ?measurement <glc:hasValue> ?value.
             ?measurement <glc:measuredIn> ?unit.
-          '}'
-          UNION
-          '{'
-            ?task_definition <glc:makes> ?replicaset.
-            ?replicaset <glc:hasDescription> "ReplicaSet".
-            ?replicaset <glc:makes> ?pod.
-            ?pod <glc:hasDescription> "Pod".
-            ?pod <glc:hasMeasurement> ?measurement.
-            ?pod <glc:consumes> ?node.
             ?pod <glc:hasStatus> ?status.
-            ?status <glc:startTime> ?startTime.
-            ?measurement <glc:hasDescription> ?measurementName.
-            ?measurement <glc:hasTimestamp> ?timestamp.
-            ?measurement <glc:hasValue> ?value.
-            ?measurement <glc:measuredIn> ?unit.
+            OPTIONAL'{' ?status <glc:startTime> ?startTime '}'
+            OPTIONAL'{' ?status <glc:endTime> ?endTime '}'
           '}'
         '}'
-        ORDER BY DESC(?timestamp)
+        UNION
+        '{'
+          SELECT ?pod ?measurement ?node ?measurementName ?ts ?value ?unit ?startTime ?endTime WHERE '{'
+            BIND(0 as ?ts).
+            ?pod <glc:hasDescription> "Pod".
+            ?pod <glc:consumes> ?node.
+            ?task_definition rdf:type <glc:AssignedTask> .
+            ?task_definition <glc:makes> ?pod.
+            ?task_definition <glc:hasConstraint> ?measurement.
+            ?measurement <glc:hasDescription> ?measurementName.
+            ?measurement <glc:maxValue> ?value.
+            ?measurement <glc:measuredIn> ?unit.
+            ?pod <glc:hasStatus> ?status.
+            OPTIONAL'{' ?status <glc:startTime> ?startTime '}'
+            OPTIONAL'{' ?status <glc:endTime> ?endTime '}'
+          '}'
+        '}'
+        UNION
+        '{'
+          SELECT ?pod ?measurement ?node ?measurementName ?ts ?value ?unit ?startTime ?endTime WHERE '{'
+            ?pod <glc:hasDescription> "Pod".
+            ?pod <glc:consumes> ?node.
+            ?replicaset <glc:hasDescription> "ReplicaSet".
+            ?replicaset rdf:type <glc:AssignedTask> .
+            ?replicaset <glc:makes> ?pod.
+            ?task_definition rdf:type <glc:AssignedTask> .
+            ?task_definition <glc:makes> ?replicaset.
+            ?task_definition <glc:hasConstraint> ?measurement.
+            ?measurement <glc:hasDescription> ?measurementName.
+            ?measurement <glc:hasTimestamp> ?ts.
+            ?measurement <glc:hasValue> ?value.
+            ?measurement <glc:measuredIn> ?unit.
+            ?pod <glc:hasStatus> ?status.
+            OPTIONAL'{' ?status <glc:startTime> ?startTime '}'
+            OPTIONAL'{' ?status <glc:endTime> ?endTime '}'
+          '}'
+        '}'
       '}'
+      FILTER(
+        regex(
+          xsd:string(?measurement),
+          "(uc2|kafka|mef-sog-uc1-wl|monitoring-stack-alertmanager|event-exporter)"
+        )
+      )
+      BIND(IF(?ts = 0,xsd:integer(replace(str(?graphURI), "^timestamp:", "")),?ts) as ?timestamp)
     '}'
+    ORDER BY DESC(?measurement)
 
 prometheus:
   url: http://prometheus.integration/api/v1/query?query={query}
