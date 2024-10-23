@@ -30,7 +30,7 @@ public class MetadataService {
     private String metadataServiceWorkloadsSparqlQuery;
 
     private JsonNode getQueryResult(JsonNode responseBody) {
-        logger.info("Metadata service response body: {}", responseBody);
+        logger.info("Metadata service response body: {}{}", responseBody.toString().substring(0, 1000), responseBody.toString().length() > 1000 ? "..." : "");
         return responseBody.get("results").get("bindings");
     }
 
@@ -59,7 +59,7 @@ public class MetadataService {
         String resourceId = MessageFormat.format(resourceIdTemplate, workloadId);
         String startTime = String.valueOf(startDate.getTime());
         String endTime = String.valueOf(endDate.getTime());
-        String query = MessageFormat.format(metadataServiceWorkloadSparqlQuery, resourceId, startTime, endTime);
+        String query = MessageFormat.format(metadataServiceWorkloadSparqlQuery, startTime, endTime, resourceId);
         return performQuery(query);
     }
 
