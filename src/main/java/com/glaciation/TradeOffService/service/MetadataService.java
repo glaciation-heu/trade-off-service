@@ -30,7 +30,9 @@ public class MetadataService {
     private String metadataServiceWorkloadsSparqlQuery;
 
     private JsonNode getQueryResult(JsonNode responseBody) {
-        logger.info("Metadata service response body: {}{}", responseBody.toString().substring(0, 1000), responseBody.toString().length() > 1000 ? "..." : "");
+        String responseBodyString = responseBody.toString();
+        String responseBodyLog = responseBodyString.length() > 1000 ? responseBodyString.substring(0, 1000) + "..." : responseBodyString;
+        logger.info("Metadata service response body: {}", responseBodyLog);
         return responseBody.get("results").get("bindings");
     }
 
