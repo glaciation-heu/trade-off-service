@@ -292,13 +292,23 @@ metrics:
               "node_name",
               "(.+)"
             )
-  #    - name: network
-  #      dkgName: Network
-  #      mappings:
-  #        - key: max
-  #          influxName:
-  #        - key: available
-  #          promql:
+    - name: energy
+      mappings:
+        - key: max
+          dkgName: Energy.Index
+        - key: available
+          promql: |
+            label_join(
+              sum(
+                irate(
+                  kepler_node_platform_joules_total'{'exported_instance="{0}"'}'[{2}] @{1}
+                )
+              ) by (container_namespace, pod_name),
+              "resource",
+              ".",
+              "container_namespace",
+              "pod_name"
+            )
   workloads:
     - name: network
       mappings:
@@ -376,4 +386,23 @@ metrics:
               ".",
               "namespace",
               "pod"
+            )
+    - name: energy
+      mappings:
+        - key: demanded
+          dkgName: Energy.Allocated
+        - key: allocated
+          dkgName: Energy.Capacity
+        - key: used
+          promql: |
+            label_join(
+              sum(
+                irate(
+                  kepler_container_joules_total'{'pod_name="{0}"'}'[{2}] @{1}
+                )
+              ) by (container_namespace, pod_name),
+              "resource",
+              ".",
+              "container_namespace",
+              "pod_name"
             )
