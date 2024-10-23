@@ -103,15 +103,13 @@ public class NodeService {
         Map<String, Object> result = new HashMap<>();
         result.put("node_id", nodeId);
 
-        List<Map<String, Object>> nodeResources = new ArrayList<>();
+        Map<String, Object> nodeResources = new HashMap<>();
         Supplier<Stream<JsonNode>> recordsStreamSupplier = () -> StreamSupport.stream(metadataRecords.spliterator(), false);
 
         // iterating over node mappings
         metricsConfiguration.getNodes().forEach(nodeMetric -> {
             logger.info("Current metric: {}", nodeMetric.getName());
-            String resourceName = nodeMetric.getName();
             Map<String, Object> resourceMap = new HashMap<>();
-            resourceMap.put("name", resourceName);
 
             nodeMetric.getMappings().forEach(mapping -> {
                 if (mapping.getDkgName() == null && mapping.getPromql() == null) {
@@ -155,7 +153,8 @@ public class NodeService {
                     resourceMap.put("unit", unit);
                 }
             });
-            nodeResources.add(resourceMap);
+            String resourceName = nodeMetric.getName();
+            nodeResources.put(resourceName, resourceMap);
         });
 
         result.put("resources", nodeResources);

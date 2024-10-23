@@ -103,15 +103,13 @@ public class WorkloadService {
         Map<String, Object> result = new HashMap<>();
         result.put("workload_id", workloadId);
 
-        List<Map<String, Object>> workloadResources = new ArrayList<>();
+        Map<String, Object> workloadResources = new HashMap<>();
         Supplier<Stream<JsonNode>> recordsStreamSupplier = () -> StreamSupport.stream(metadataRecords.spliterator(), false);
 
         // iterating over workload mappings
         metricsConfiguration.getWorkloads().forEach(workloadMetric -> {
             logger.debug("Current metric: {}", workloadMetric.getName());
-            String resourceName = workloadMetric.getName();
             Map<String, Object> resourceMap = new HashMap<>();
-            resourceMap.put("name", resourceName);
 
             workloadMetric.getMappings().forEach(mapping -> {
                 if (mapping.getDkgName() == null && mapping.getPromql() == null) {
@@ -154,10 +152,10 @@ public class WorkloadService {
                     resourceMap.put(mapping.getKey(), value);
                     String unit = metricNode.get(metricsConfiguration.getMetricUnitKey()).get("value").textValue();
                     resourceMap.put("unit", unit);
-
                 }
             });
-            workloadResources.add(resourceMap);
+            String resourceName = workloadMetric.getName();
+            workloadResources.put(resourceName, resourceMap);
         });
 
         result.put("resources", workloadResources);
