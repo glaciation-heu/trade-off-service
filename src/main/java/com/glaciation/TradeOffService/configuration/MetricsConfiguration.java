@@ -16,6 +16,7 @@ public class MetricsConfiguration {
     String workloadIdKey;
     String workloadNodeKey;
     String workloadStartTimeKey;
+    String workloadEndTimeKey;
     String resourceIdPattern;
     List<NodeMetric> nodes;
     List<NodeMetric> workloads;
@@ -34,6 +35,14 @@ public class MetricsConfiguration {
 
     public void setWorkloadStartTimeKey(String workloadStartTimeKey) {
         this.workloadStartTimeKey = workloadStartTimeKey;
+    }
+
+    public String getWorkloadEndTimeKey() {
+        return workloadEndTimeKey;
+    }
+
+    public void setWorkloadEndTimeKey(String workloadEndTimeKey) {
+        this.workloadEndTimeKey = workloadEndTimeKey;
     }
 
     public String getResourceIdPattern() {

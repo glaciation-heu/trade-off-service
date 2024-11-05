@@ -246,6 +246,7 @@ metrics:
   workloadIdKey: pod
   workloadNodeKey: node
   workloadStartTimeKey: startTime
+  workloadEndTimeKey: endTime
   resourceIdPattern: (?<=https://kubernetes.local/#).*
   nodes:
     - name: cpu

@@ -162,10 +162,13 @@ public class WorkloadService {
 
         Map<String, Object> runsOnMap = new HashMap<>();
         if (!metadataRecords.isEmpty()) {
-            runsOnMap.put("node", metadataRecords.get(0).get(metricsConfiguration.getWorkloadNodeKey()).get("value").textValue());
-            runsOnMap.put("startTime", metadataRecords.get(0).get(metricsConfiguration.getWorkloadStartTimeKey()).get("value").textValue());
+            runsOnMap.put("worker_node_id", metadataRecords.get(0).get(metricsConfiguration.getWorkloadNodeKey()).get("value").textValue());
+            runsOnMap.put("start_time", metadataRecords.get(0).get(metricsConfiguration.getWorkloadStartTimeKey()).get("value").textValue());
+            if (metadataRecords.get(0).has(metricsConfiguration.getWorkloadEndTimeKey())) {
+                runsOnMap.put("end_time", metadataRecords.get(0).get(metricsConfiguration.getWorkloadEndTimeKey()).get("value").textValue());
+            }
         }
-        result.put("runsOn", runsOnMap);
+        result.put("runs_on", runsOnMap);
 
         return objectMapper.valueToTree(result);
     }
