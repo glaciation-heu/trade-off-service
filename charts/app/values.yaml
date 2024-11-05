@@ -206,12 +206,6 @@ config:
             '}'
           '}'
         '}'
-        FILTER(
-          regex(
-            xsd:string(?measurement),
-            "(uc2|kafka|mef-sog-uc1-wl|monitoring-stack-alertmanager|event-exporter)"
-          )
-        )
         FILTER(?pod = {2})
         BIND(IF(?ts = 0,xsd:integer(replace(str(?graphURI), "^timestamp:", "")),?ts) as ?timestamp)
       '}'
@@ -284,12 +278,6 @@ config:
             '}'
           '}'
         '}'
-        FILTER(
-          regex(
-            xsd:string(?measurement),
-            "(uc2|kafka|mef-sog-uc1-wl|monitoring-stack-alertmanager|event-exporter)"
-          )
-        )
         BIND(IF(?ts = 0,xsd:integer(replace(str(?graphURI), "^timestamp:", "")),?ts) as ?timestamp)
       '}'
       ORDER BY DESC(?measurement)
@@ -302,7 +290,7 @@ config:
     metricValueKey: value
     metricUnitKey: unit
     nodeIdKey: node
-    workloadIdKey: workload
+    workloadIdKey: pod
     workloadNodeKey: node
     workloadStartTimeKey: startTime
     resourceIdPattern: (?<=https://kubernetes.local/#).*
