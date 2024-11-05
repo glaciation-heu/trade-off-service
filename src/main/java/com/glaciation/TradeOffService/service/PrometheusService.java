@@ -40,13 +40,15 @@ public class PrometheusService {
 
     public JsonNode performQuery(String query) {
         JsonNode body = this.query(query);
-        logger.info("Prometheus query result: {}", body);
+        String responseBodyString = body.toString();
+        String responseBodyLog = responseBodyString.length() > 1000 ? responseBodyString.substring(0, 1000) + "..." : responseBodyString;
+        logger.info("Prometheus query result: {}", responseBodyLog);
 
         if (body == null) return null;
 
         if (body.get("data").get("result").isEmpty()) return null;
 
-        return body.get("data").get("result").get(0).get("value").get(1);
+        return body.get("data").get("result");
     }
 
     public String truncateTimestamp(Date endTime) {

@@ -2,7 +2,7 @@ package com.glaciation.TradeOffService.model;
 
 public class ResourceMapping {
     String key;
-    String promql;
+    ResourcePromql promql;
     String dkgName;
 
     public String getKey() {
@@ -13,11 +13,11 @@ public class ResourceMapping {
         this.key = key;
     }
 
-    public String getPromql() {
+    public ResourcePromql getPromql() {
         return promql;
     }
 
-    public void setPromql(String promql) {
+    public void setPromql(ResourcePromql promql) {
         this.promql = promql;
     }
 

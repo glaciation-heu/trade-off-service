@@ -44,7 +44,7 @@ public class NodeService {
             logger.warn("Response from Metadata Service is empty!");
         }
 
-        return ResponseEntity.ok(this.createNodePayload(nodeId, startTime, endTime, (ArrayNode) nodeMetadata));
+        return ResponseEntity.ok(this.createNodePayload(nodeId, startTime, endTime, (ArrayNode) nodeMetadata, null));
     }
 
     public ResponseEntity<JsonNode> getNodes(Date startTime, Date endTime) {
@@ -77,10 +77,41 @@ public class NodeService {
                 nodesMetadataMap.put(nodeId, records);
             }
         });
-        logger.info("Nodes metadata map: {}", nodesMetadataMap);
+        logger.info("Nodes metadata map size: {}", nodesMetadataMap.size());
+
+        // query prometheus for each metric (array mode)
+        // map = (nodeId, (metric, value))
+        Map<String, Map<String, String>> prometheusMap = new HashMap<>();
+        metricsConfiguration.getNodes().forEach(nodeMetric -> {
+            nodeMetric.getMappings().stream()
+                    .filter(mapping -> mapping.getPromql() != null)
+                    .forEach(mapping -> {
+                        String window = prometheusService.calculateDuration(startTime, endTime);
+                        String truncatedEndTime = prometheusService.truncateTimestamp(endTime);
+                        String query = MessageFormat.format(mapping.getPromql().getArray(), truncatedEndTime, window);
+                        ArrayNode records = (ArrayNode) prometheusService.performQuery(query);
+                        if (records != null) {
+                            records.forEach(record -> {
+                                if (record.get("metric") == null || record.get("metric").isEmpty() || record.get("metric").get("resource") == null || record.get("metric").get("resource").textValue().isEmpty()) {
+                                    logger.warn("Could not find nodeId in metric record: {}", record.get("metric"));
+                                    return;
+                                }
+                                String nodeId = record.get("metric").get("resource").textValue();
+                                if (prometheusMap.containsKey(nodeId)) {
+                                    prometheusMap.get(nodeId).put(nodeMetric.getName(), record.get("value").get(1).textValue());
+                                } else {
+                                    Map<String, String> recordsByMetric = new HashMap<>();
+                                    recordsByMetric.put(nodeMetric.getName(), record.get("value").get(1).textValue());
+                                    prometheusMap.put(nodeId, recordsByMetric);
+                                }
+                            });
+                        }
+                    });
+        });
+        logger.info("Nodes data map size: {}", prometheusMap.size());
 
         List<JsonNode> outputNodes = new ArrayList<>();
-        nodesMetadataMap.forEach((resourceId, records) -> {
+        nodesMetadataMap.forEach((resourceId, metadataRecords) -> {
             String resourceIdPattern = metricsConfiguration.getResourceIdPattern();
             Pattern pattern = Pattern.compile(resourceIdPattern);
             Matcher matcher = pattern.matcher(resourceId);
@@ -89,7 +120,8 @@ public class NodeService {
                 throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
             }
             String id = matcher.group();
-            outputNodes.add(this.createNodePayload(id, startTime, endTime, records));
+            Map<String, String> prometheusRecords = prometheusMap.get(id);
+            outputNodes.add(this.createNodePayload(id, startTime, endTime, metadataRecords, prometheusRecords));
         });
 
         Map<String, Object> result = new HashMap<>();
@@ -98,7 +130,7 @@ public class NodeService {
         return ResponseEntity.ok(objectMapper.valueToTree(result));
     }
 
-    private JsonNode createNodePayload(String nodeId, Date startTime, Date endTime, ArrayNode metadataRecords) {
+    private JsonNode createNodePayload(String nodeId, Date startTime, Date endTime, ArrayNode metadataRecords, Map<String, String> prometheusMap) {
         logger.info("Creating payload for node '{}'", nodeId);
         Map<String, Object> result = new HashMap<>();
         result.put("node_id", nodeId);
@@ -108,7 +140,7 @@ public class NodeService {
 
         // iterating over node mappings
         metricsConfiguration.getNodes().forEach(nodeMetric -> {
-            logger.info("Current metric: {}", nodeMetric.getName());
+            logger.debug("Current metric: {}", nodeMetric.getName());
             Map<String, Object> resourceMap = new HashMap<>();
 
             nodeMetric.getMappings().forEach(mapping -> {
@@ -118,20 +150,28 @@ public class NodeService {
 //                    throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
                 }
 
-                // perform query to prometheus
                 if (mapping.getDkgName() == null) {
-                    String window = prometheusService.calculateDuration(startTime, endTime);
-                    String truncatedEndTime = prometheusService.truncateTimestamp(endTime);
-                    String query = MessageFormat.format(mapping.getPromql(), nodeId, truncatedEndTime, window);
-                    JsonNode queryResult = prometheusService.performQuery(query);
-                    if (queryResult != null) {
-                        String value = queryResult.textValue();
-                        logger.info("Setting {} to value: {}", mapping.getKey(), value);
+                    // mapping is relative to prometheus data
+                    if (prometheusMap == null) {
+                        // perform query to prometheus
+                        String window = prometheusService.calculateDuration(startTime, endTime);
+                        String truncatedEndTime = prometheusService.truncateTimestamp(endTime);
+                        String query = MessageFormat.format(mapping.getPromql().getSingle(), nodeId, truncatedEndTime, window);
+                        JsonNode queryResult = prometheusService.performQuery(query);
+                        if (queryResult != null) {
+                            String value = queryResult.get(0).get("value").get(1).textValue();
+                            logger.info("Setting {}.{} to value: {}", nodeMetric.getName(), mapping.getKey(), value);
+                            resourceMap.put(mapping.getKey(), value);
+                        }
+                    } else { // array mode, already queried prometheus
+                        if (!prometheusMap.containsKey(nodeMetric.getName())) return;
+                        String value = prometheusMap.get(nodeMetric.getName());
+                        logger.info("Setting {}.{} to value: {}", nodeMetric.getName(), mapping.getKey(), value);
                         resourceMap.put(mapping.getKey(), value);
                     }
                 } else {
                     // get metadata
-                    logger.info("Looking for '{}' metric by '{}' key", mapping.getDkgName(), metricsConfiguration.getMetricNameKey());
+                    logger.debug("Looking for '{}' metric by '{}' key", mapping.getDkgName(), metricsConfiguration.getMetricNameKey());
                     JsonNode metricNode = recordsStreamSupplier.get().filter(record -> {
                         JsonNode matchingNode = record.get(metricsConfiguration.getMetricNameKey());
                         if (matchingNode == null) {
@@ -145,9 +185,10 @@ public class NodeService {
                         logger.info("Metric '{}' not found in metadata payload", mapping.getDkgName());
                         return;
                     }
-                    logger.info("Metric node: {}", metricNode);
+//                    logger.info("Metric node: {}", metricNode);
 
                     String value = metricNode.get(metricsConfiguration.getMetricValueKey()).get("value").textValue();
+                    logger.info("Setting {}.{} to value: {}", nodeMetric.getName(), mapping.getKey(), value);
                     resourceMap.put(mapping.getKey(), value);
                     String unit = metricNode.get(metricsConfiguration.getMetricUnitKey()).get("value").textValue();
                     resourceMap.put("unit", unit);

@@ -254,68 +254,97 @@ metrics:
         - key: max
           dkgName: CPU.Capacity
         - key: available
-          promql: |
-            label_replace(
-              sum(
-                rate(
-                  node_cpu_seconds_total'{'mode="idle", node="{0}"'}'[{2}] @{1}
-                )
-              ) by (node),
-              "resource",
-              "$1",
-              "node",
-              "(.+)"
-            )
-    #    - name: gpu
-    #      dkgName: GPU
-    #      mappings:
-    #        - key: max
-    #          dkgName: gpu-capacity-max
-    #        - key: available
-    #          promql:
+          promql:
+            single: |
+              label_replace(
+                sum(
+                  rate(
+                    node_cpu_seconds_total'{'mode="idle", node="{0}"'}'[{2}] @{1}
+                  )
+                ) by (node),
+                "resource",
+                "$1",
+                "node",
+                "(.+)"
+              )
+            array: |
+              label_replace(
+                sum(
+                  rate(
+                    node_cpu_seconds_total'{'mode="idle"'}'[{1}] @{0}
+                  )
+                ) by (node),
+                "resource",
+                "$1",
+                "node",
+                "(.+)"
+              )
     - name: memory
       mappings:
         - key: max
           dkgName: RAM.Capacity
         - key: available
-          promql: |
-            label_replace(
-              node_memory_MemFree_bytes'{'node="{0}"'}' @{1},
-              "resource",
-              "$1",
-              "node",
-              "(.+)"
-            )
+          promql:
+            single: |
+              label_replace(
+                node_memory_MemFree_bytes'{'node="{0}"'}' @{1},
+                "resource",
+                "$1",
+                "node",
+                "(.+)"
+              )
+            array: |
+              label_replace(
+                node_memory_MemFree_bytes @{0},
+                "resource",
+                "$1",
+                "node",
+                "(.+)"
+              )
     - name: storage
       mappings:
         - key: max
           dkgName: Storage.Capacity
         - key: available
-          promql: |
-            label_replace(
-              ephemeral_storage_node_available'{'node_name="{0}"'}' @{1},
-              "resource",
-              "$1",
-              "node_name",
-              "(.+)"
-            )
+          promql:
+            single: |
+              label_replace(
+                ephemeral_storage_node_available'{'node_name="{0}"'}' @{1},
+                "resource",
+                "$1",
+                "node_name",
+                "(.+)"
+              )
+            array: |
+              label_replace(
+                ephemeral_storage_node_available @{0},
+                "resource",
+                "$1",
+                "node_name",
+                "(.+)"
+              )
     - name: energy
       mappings:
         - key: max
           dkgName: Energy.Index
         - key: available
-          promql: |
-            label_join(
-              sum(
-                irate(
-                  kepler_node_platform_joules_total'{'exported_instance="{0}"'}'[{2}] @{1}
-                )
-              ) by (container_namespace, pod_name),
-              "resource",
-              ".",
-              "container_namespace",
-              "pod_name"
-            )
+          promql:
+            single: |
+              label_replace(
+                irate(kepler_node_platform_joules_total'{'exported_instance="{0}"'}'[{2}] @{1}),
+                "resource",
+                "$1",
+                "exported_instance",
+                "(.+)"
+              )
+            array: |
+              label_replace(
+                irate(kepler_node_platform_joules_total[{1}] @{0}),
+                "resource",
+                "$1",
+                "exported_instance",
+                "(.+)"
+              )
   workloads:
     - name: network
       mappings:
@@ -324,23 +353,41 @@ metrics:
         - key: allocated # limit
           dkgName: Network.Capacity
         - key: used
-          promql: |
-            label_join(
-              sum(
-                rate(
-                  container_network_receive_bytes_total'{'pod="{0}"'}'[{2}] @{1}
-                )
-              ) by (namespace, pod) +
-              sum(
-                rate(
-                  container_network_transmit_bytes_total'{'pod="{0}"'}'[{2}] @{1}
-                )
-              ) by (namespace, pod),
-              "resource",
-              ".",
-              "namespace",
-              "pod"
-            )
+          promql:
+            single: |
+              label_join(
+                sum(
+                  rate(
+                    container_network_receive_bytes_total'{'pod="{0}"'}'[{2}] @{1}
+                  )
+                ) by (namespace, pod) +
+                sum(
+                  rate(
+                    container_network_transmit_bytes_total'{'pod="{0}"'}'[{2}] @{1}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )
+            array: |
+              label_join(
+                sum(
+                  rate(
+                    container_network_receive_bytes_total[{1}] @{0}
+                  )
+                ) by (namespace, pod) +
+                sum(
+                  rate(
+                    container_network_transmit_bytes_total[{1}] @{0}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )
     - name: storage
       mappings:
         - key: demanded
@@ -348,14 +395,23 @@ metrics:
         - key: allocated
           dkgName: Storage.Capacity
         - key: used
-          promql: |
-            label_join(
-              ephemeral_storage_pod_usage'{'pod_name="{0}"'}' @{1},
-              "resource",
-              ".",
-              "pod_namespace",
-              "pod_name"
-            )
+          promql:
+            single: |
+              label_join(
+                ephemeral_storage_pod_usage'{'pod_name="{0}"'}' @{1},
+                "resource",
+                ".",
+                "pod_namespace",
+                "pod_name"
+              )
+            array: |
+              label_join(
+                ephemeral_storage_pod_usage @{0},
+                "resource",
+                ".",
+                "pod_namespace",
+                "pod_name"
+              )
     - name: cpu
       mappings:
         - key: demanded
@@ -363,18 +419,31 @@ metrics:
         - key: allocated
           dkgName: CPU.Capacity
         - key: used
-          promql: |
-            label_join(
-              sum(
-                rate(
-                  container_cpu_usage_seconds_total'{'pod="{0}"'}'[{2}] @{1}
-                )
-              ) by (namespace, pod),
-              "resource",
-              ".",
-              "namespace",
-              "pod"
-            )
+          promql:
+            single: |
+              label_join(
+                sum(
+                  rate(
+                    container_cpu_usage_seconds_total'{'pod="{0}"'}'[{2}] @{1}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )
+            array: |
+              label_join(
+                sum(
+                  rate(
+                    container_cpu_usage_seconds_total[{1}] @{0}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )
     - name: memory
       mappings:
         - key: demanded
@@ -382,18 +451,31 @@ metrics:
         - key: allocated
           dkgName: RAM.Capacity
         - key: used
-          promql: |
-            label_join(
-              sum(
-                rate(
-                  container_memory_working_set_bytes'{'pod="{0}"'}'[{2}] @{1}
-                )
-              ) by (namespace, pod),
-              "resource",
-              ".",
-              "namespace",
-              "pod"
-            )
+          promql:
+            single: |
+              label_join(
+                sum(
+                  rate(
+                    container_memory_working_set_bytes'{'pod="{0}"'}'[{2}] @{1}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )
+            array: |
+              label_join(
+                sum(
+                  rate(
+                    container_memory_working_set_bytes[{1}] @{0}
+                  )
+                ) by (namespace, pod),
+                "resource",
+                ".",
+                "namespace",
+                "pod"
+              )
     - name: energy
       mappings:
         - key: demanded
@@ -401,15 +483,28 @@ metrics:
         - key: allocated
           dkgName: Energy.Capacity
         - key: used
-          promql: |
-            label_join(
-              sum(
-                irate(
-                  kepler_container_joules_total'{'pod_name="{0}"'}'[{2}] @{1}
-                )
-              ) by (container_namespace, pod_name),
-              "resource",
-              ".",
-              "container_namespace",
-              "pod_name"
-            )
+          promql:
+            single: |
+              label_join(
+                sum(
+                  irate(
+                    kepler_container_joules_total'{'pod_name="{0}"'}'[{2}] @{1}
+                  )
+                ) by (container_namespace, pod_name),
+                "resource",
+                ".",
+                "container_namespace",
+                "pod_name"
+              )
+            array: |
+              label_join(
+                sum(
+                  irate(
+                    kepler_container_joules_total[{1}] @{0}
+                  )
+                ) by (container_namespace, pod_name),
+                "resource",
+                ".",
+                "container_namespace",
+                "pod_name"
+              )
