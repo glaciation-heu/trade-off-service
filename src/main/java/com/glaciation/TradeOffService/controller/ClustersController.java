@@ -66,7 +66,7 @@ public class ClustersController {
     @GetMapping("/{clusterId}/nodes")
     @Operation(description = "Get all worker nodes' data and metadata")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Array of worker nodes returned", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Workload.class))),
+            @ApiResponse(responseCode = "200", description = "Array of worker nodes returned", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Node.class))),
             @ApiResponse(responseCode = "400", description = "Malformed request", content = @Content),
             @ApiResponse(responseCode = "500", description = "An error occurred on the server side", content = @Content)
     })
