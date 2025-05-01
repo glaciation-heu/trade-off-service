@@ -395,9 +395,9 @@ config:
     workloads:
       - name: network
         mappings:
-          - key: demanded
+          - key: allocated
             dkgName: Network.Allocated
-          - key: allocated # limit
+          - key: demanded # limit
             dkgName: Network.Capacity
           - key: used
             promql:
@@ -437,9 +437,9 @@ config:
                 )
       - name: storage
         mappings:
-          - key: demanded
-            dkgName: Storage.Allocated
           - key: allocated
+            dkgName: Storage.Allocated
+          - key: demanded
             dkgName: Storage.Capacity
           - key: used
             promql:
@@ -461,9 +461,9 @@ config:
                 )
       - name: cpu
         mappings:
-          - key: demanded
-            dkgName: CPU.Allocated
           - key: allocated
+            dkgName: CPU.Allocated
+          - key: demanded
             dkgName: CPU.Capacity
           - key: used
             promql:
@@ -493,9 +493,9 @@ config:
                 )
       - name: memory
         mappings:
-          - key: demanded
-            dkgName: RAM.Allocated
           - key: allocated
+            dkgName: RAM.Allocated
+          - key: demanded
             dkgName: RAM.Capacity
           - key: used
             promql:
@@ -525,9 +525,9 @@ config:
                 )
       - name: energy
         mappings:
-          - key: demanded
-            dkgName: Energy.Allocated
           - key: allocated
+            dkgName: Energy.Allocated
+          - key: demanded
             dkgName: Energy.Capacity
           - key: used
             promql:

@@ -323,6 +323,17 @@ metrics:
                 "node_name",
                 "(.+)"
               )
+#    - name: gpu
+#      mappings:
+#        - key: max
+#          dkgName: GPU.Capacity
+#        - key: available
+#          promql:
+#            - single: |
+#
+#            - array: |
+
+#    - name: network
     - name: energy
       mappings:
         - key: max
@@ -348,9 +359,9 @@ metrics:
   workloads:
     - name: network
       mappings:
-        - key: demanded
+        - key: allocated
           dkgName: Network.Allocated
-        - key: allocated # limit
+        - key: demanded
           dkgName: Network.Capacity
         - key: used
           promql:
@@ -390,9 +401,9 @@ metrics:
               )
     - name: storage
       mappings:
-        - key: demanded
-          dkgName: Storage.Allocated
         - key: allocated
+          dkgName: Storage.Allocated
+        - key: demanded
           dkgName: Storage.Capacity
         - key: used
           promql:
@@ -414,9 +425,9 @@ metrics:
               )
     - name: cpu
       mappings:
-        - key: demanded
-          dkgName: CPU.Allocated
         - key: allocated
+          dkgName: CPU.Allocated
+        - key: demanded
           dkgName: CPU.Capacity
         - key: used
           promql:
@@ -446,9 +457,9 @@ metrics:
               )
     - name: memory
       mappings:
-        - key: demanded
-          dkgName: RAM.Allocated
         - key: allocated
+          dkgName: RAM.Allocated
+        - key: demanded
           dkgName: RAM.Capacity
         - key: used
           promql:
@@ -478,9 +489,9 @@ metrics:
               )
     - name: energy
       mappings:
-        - key: demanded
-          dkgName: Energy.Allocated
         - key: allocated
+          dkgName: Energy.Allocated
+        - key: demanded
           dkgName: Energy.Capacity
         - key: used
           promql:

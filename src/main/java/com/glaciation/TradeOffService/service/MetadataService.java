@@ -31,7 +31,7 @@ public class MetadataService {
 
     private JsonNode getQueryResult(JsonNode responseBody) {
         String responseBodyString = responseBody.toString();
-        String responseBodyLog = responseBodyString.length() > 1000 ? responseBodyString.substring(0, 1000) + "..." : responseBodyString;
+        String responseBodyLog = responseBodyString.length() > 10000 ? responseBodyString.substring(0, 10000) + "..." : responseBodyString;
         logger.info("Metadata service response body: {}", responseBodyLog);
         return responseBody.get("results").get("bindings");
     }
